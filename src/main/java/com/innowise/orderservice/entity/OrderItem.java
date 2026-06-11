@@ -3,6 +3,7 @@ package com.innowise.orderservice.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -28,13 +29,13 @@ public class OrderItem {
     @Getter
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     @Getter
     @Setter
     private Order order;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false)
     @Getter
     @Setter
@@ -57,8 +58,7 @@ public class OrderItem {
 
     protected OrderItem() {}
 
-    public OrderItem(Order order, Item item, Integer quantity) {
-        this.order = order;
+    public OrderItem(Item item, Integer quantity) {
         this.item = item;
         this.quantity = quantity;
     }
