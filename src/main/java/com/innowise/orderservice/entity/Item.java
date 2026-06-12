@@ -7,7 +7,9 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -19,39 +21,28 @@ import java.time.Instant;
 @Entity
 @Table(name = "items")
 @EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Item {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
-    @Getter
-    @Setter
     private Long id;
 
     @Column(name = "name", nullable = false)
-    @Getter
-    @Setter
     private String name;
 
     @Column(name = "price", nullable = false)
-    @Getter
-    @Setter
     private BigDecimal price;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)
-    @Getter
     private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    @Getter
     private Instant updatedAt;
-
-    protected Item() {}
-
-    public Item(String name, BigDecimal price) {
-        this.name = name;
-        this.price = price;
-    }
 }

@@ -10,7 +10,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -21,45 +23,33 @@ import java.time.Instant;
 @Entity
 @Table(name = "order_items")
 @EntityListeners(AuditingEntityListener.class)
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class OrderItem {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
-    @Getter
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    @Getter
-    @Setter
     private Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = false)
-    @Getter
-    @Setter
     private Item item;
 
     @Column(name = "quantity", nullable = false)
-    @Getter
-    @Setter
-    private Integer quantity;
+    private Short quantity;
 
     @CreatedDate
     @Column(name = "created_at", updatable = false, nullable = false)
-    @Getter
     private Instant createdAt;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
-    @Getter
     private Instant updatedAt;
-
-    protected OrderItem() {}
-
-    public OrderItem(Item item, Integer quantity) {
-        this.item = item;
-        this.quantity = quantity;
-    }
 }
