@@ -32,4 +32,6 @@ public class OrderDto {
 
     @NotEmpty(message = "Order must contain at least one item")
     private List<OrderItemDto> items;
+
+    private UserDto user;
 }

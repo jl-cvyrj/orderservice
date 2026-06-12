@@ -1,6 +1,8 @@
 package com.innowise.orderservice.service.impl;
 
+import com.innowise.orderservice.client.UserClient;
 import com.innowise.orderservice.dto.OrderDto;
+import com.innowise.orderservice.dto.UserDto;
 import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.entity.OrderItem;
 import com.innowise.orderservice.entity.OrderStatus;
@@ -26,10 +28,12 @@ public class OrderServiceImpl implements OrderService {
 
     private final OrderRepository orderRepository;
     private final OrderMapper orderMapper;
+    private final UserClient userClient;
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderMapper orderMapper) {
+    public OrderServiceImpl(OrderRepository orderRepository, OrderMapper orderMapper, UserClient userClient) {
         this.orderRepository = orderRepository;
         this.orderMapper = orderMapper;
+        this.userClient = userClient;
     }
 
     @Override
@@ -42,18 +46,34 @@ public class OrderServiceImpl implements OrderService {
         linkOrderItems(order);
 
         Order savedOrder = orderRepository.save(order);
-        return orderMapper.toOrderDto(savedOrder);
+        OrderDto responseDto = orderMapper.toOrderDto(savedOrder);
+
+        if (savedOrder.getUserId() != null) {
+            UserDto userDto = userClient.getUserById(savedOrder.getUserId());
+            responseDto.setUser(userDto);
+        }
+
+        return responseDto;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public OrderDto getOrderById(Long id) throws ResourceNotFoundException {
 
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE + id));
-        return orderMapper.toOrderDto(order);
+        OrderDto orderDto = orderMapper.toOrderDto(order);
+
+        if (order.getUserId() != null) {
+            UserDto userDto = userClient.getUserById(order.getUserId());
+            orderDto.setUser(userDto);
+        }
+
+        return orderDto;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<OrderDto> getAllOrders(Instant start, Instant end, List<OrderStatus> statuses, Pageable pageable) {
 
         Specification<Order> specification = Specification
@@ -61,15 +81,30 @@ public class OrderServiceImpl implements OrderService {
                 .and(OrderSpecification.hasStatus(statuses));
 
         Page<Order> orderPage = orderRepository.findAll(specification, pageable);
-        return orderPage.map(orderMapper::toOrderDto);
+        return orderPage.map(order -> {
+            OrderDto orderDto = orderMapper.toOrderDto(order);
+            if(order.getUserId() != null) {
+                UserDto userDto = userClient.getUserById(order.getUserId());
+                orderDto.setUser(userDto);
+            }
+            return orderDto;
+        });
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<OrderDto> getOrdersByUserId(Long userId) {
 
         List<Order> orders = orderRepository.findByUserId(userId);
         return orders.stream()
-                .map(orderMapper::toOrderDto)
+                .map(order -> {
+                    OrderDto orderDto = orderMapper.toOrderDto(order);
+                    if(order.getUserId() != null) {
+                        UserDto userDto = userClient.getUserById(order.getUserId());
+                        orderDto.setUser(userDto);
+                    }
+                    return orderDto;
+                })
                 .toList();
     }
 
@@ -84,7 +119,13 @@ public class OrderServiceImpl implements OrderService {
         linkOrderItems(existingOrder);
 
         Order savedOrder = orderRepository.save(existingOrder);
-        return orderMapper.toOrderDto(savedOrder);
+        OrderDto responseOrderDto = orderMapper.toOrderDto(savedOrder);
+
+        if(savedOrder.getUserId() != null) {
+            UserDto userDto = userClient.getUserById(savedOrder.getUserId());
+            responseOrderDto.setUser(userDto);
+        }
+        return responseOrderDto;
     }
 
     @Override
