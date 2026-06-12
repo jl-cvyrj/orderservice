@@ -23,4 +23,7 @@ public interface OrderMapper {
 
     OrderDto toOrderDto(Order order);
     Order toOrder(OrderDto orderDto);
+
+    void updateOrderFromDto(OrderDto dto, @org.mapstruct.MappingTarget Order entity);
+    void updateItemFromDto(ItemDto dto, @org.mapstruct.MappingTarget Item entity);
 }

@@ -70,6 +70,7 @@ public class Order {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Getter
+    @Setter
     private List<OrderItem> items = new ArrayList<>();
 
     protected Order() {}
