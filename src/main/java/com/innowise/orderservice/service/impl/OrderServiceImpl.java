@@ -58,7 +58,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional(readOnly = true)
-    public OrderDto getOrderById(Long id) throws ResourceNotFoundException {
+    public OrderDto getOrderById(Long id) {
 
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE + id));
@@ -110,7 +110,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderDto updateOrderById(Long id, OrderDto updatedOrderDto) throws ResourceNotFoundException {
+    public OrderDto updateOrderById(Long id, OrderDto updatedOrderDto) {
 
         Order existingOrder = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE + id));
@@ -130,7 +130,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public void deleteOrderById(Long id) throws ResourceNotFoundException {
+    public void deleteOrderById(Long id) {
 
         Order existingOrder = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE + id));

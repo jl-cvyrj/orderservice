@@ -34,7 +34,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemDto getItemById(Long id) throws ResourceNotFoundException {
+    public ItemDto getItemById(Long id) {
 
         Item item = itemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ITEM_NOT_FOUND_MESSAGE + id));
@@ -52,7 +52,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public ItemDto updateItemById(Long id, ItemDto updatedItemDto) throws ResourceNotFoundException {
+    public ItemDto updateItemById(Long id, ItemDto updatedItemDto) {
 
         Item existingItem = itemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ITEM_NOT_FOUND_MESSAGE + id));
@@ -63,7 +63,7 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     @Transactional
-    public void deleteItemById(Long id) throws ResourceNotFoundException {
+    public void deleteItemById(Long id) {
 
         itemRepository.deleteById(id);
     }

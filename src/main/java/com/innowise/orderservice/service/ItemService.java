@@ -9,11 +9,11 @@ public interface ItemService {
 
     ItemDto createItem(ItemDto itemDto);
 
-    ItemDto getItemById(Long id) throws ResourceNotFoundException;
+    ItemDto getItemById(Long id);
 
     List<ItemDto> getAllItems();
 
-    ItemDto updateItemById(Long id, ItemDto updatedItemDto) throws ResourceNotFoundException;
+    ItemDto updateItemById(Long id, ItemDto updatedItemDto);
 
-    void deleteItemById(Long id) throws ResourceNotFoundException;
+    void deleteItemById(Long id);
 }

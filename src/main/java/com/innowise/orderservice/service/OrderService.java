@@ -13,13 +13,13 @@ public interface OrderService {
 
     OrderDto createOrder(OrderDto orderDto);
 
-    OrderDto getOrderById(Long id) throws ResourceNotFoundException;
+    OrderDto getOrderById(Long id);
 
     Page<OrderDto> getAllOrders(Instant start, Instant end, List<OrderStatus> statuses, Pageable pageable);
 
     List<OrderDto> getOrdersByUserId(Long userId);
 
-    OrderDto updateOrderById(Long id, OrderDto updatedOrderDto) throws ResourceNotFoundException;
+    OrderDto updateOrderById(Long id, OrderDto updatedOrderDto);
 
-    void deleteOrderById(Long id) throws ResourceNotFoundException;
+    void deleteOrderById(Long id);
 }
