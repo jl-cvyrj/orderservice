@@ -1,12 +1,16 @@
 package com.innowise.orderservice.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.innowise.orderservice.dto.OrderDto;
+import com.github.tomakehurst.wiremock.WireMockServer;
 import com.innowise.orderservice.dto.OrderItemDto;
+import com.innowise.orderservice.dto.OrderResponseDto;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.entity.OrderStatus;
 import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
+import com.github.tomakehurst.wiremock.client.WireMock;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,23 +28,32 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(
-        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        properties = {
-                "USER_SERVICE_URL=http://localhost:8080"
-        }
-)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc(addFilters = false)
 @Testcontainers
 class OrderControllerIntegrationTest {
+
+    static WireMockServer wireMockServer = new WireMockServer(8080);
+
+    @BeforeAll
+    static void startWireMock() {
+        wireMockServer.start();
+    }
+
+    @AfterAll
+    static void stopWireMock() {
+        wireMockServer.stop();
+    }
 
     @Container
     static final PostgreSQLContainer<?> postgresContainer =
@@ -56,23 +69,17 @@ class OrderControllerIntegrationTest {
         registry.add("spring.datasource.password", postgresContainer::getPassword);
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         registry.add("spring.liquibase.enabled", () -> "true");
+        registry.add("user.service.url", () -> "http://localhost:8080");
     }
-
-    private final MockMvc mockMvc;
-    private final OrderRepository orderRepository;
-    private final ItemRepository itemRepository;
-    private final ObjectMapper objectMapper;
 
     @Autowired
-    public OrderControllerIntegrationTest(MockMvc mockMvc,
-                                          OrderRepository orderRepository,
-                                          ItemRepository itemRepository,
-                                          ObjectMapper objectMapper) {
-        this.mockMvc = mockMvc;
-        this.orderRepository = orderRepository;
-        this.itemRepository = itemRepository;
-        this.objectMapper = objectMapper;
-    }
+    private MockMvc mockMvc;
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private ItemRepository itemRepository;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @BeforeEach
     void cleanUp() {
@@ -82,20 +89,24 @@ class OrderControllerIntegrationTest {
 
     @Test
     void createOrder_ShouldSaveToDatabaseAndReturnCreated() throws Exception {
+        WireMock.stubFor(get(urlMatching("/users/42"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"id\": 42, \"name\": \"John\", \"surname\": \"Doe\", \"active\": true}")));
+
         Item item = new Item();
-        item.setId(1L);
         item.setName("Test Item");
         item.setPrice(new BigDecimal("10.00"));
-        itemRepository.save(item);
+        Item savedItem = itemRepository.save(item);
 
         OrderItemDto orderItemDto = new OrderItemDto();
-        orderItemDto.setItemId(1L);
+        orderItemDto.setItemId(savedItem.getId());
         orderItemDto.setQuantity((short) 1);
 
         List<OrderItemDto> items = new ArrayList<>();
         items.add(orderItemDto);
 
-        OrderDto orderDto = new OrderDto();
+        OrderResponseDto orderDto = new OrderResponseDto();
         orderDto.setUserId(42L);
         orderDto.setStatus(OrderStatus.CREATED);
         orderDto.setItems(items);
@@ -114,7 +125,7 @@ class OrderControllerIntegrationTest {
 
     @Test
     void getOrderById_ShouldReturnNotFound_WhenOrderDoesNotExist() throws Exception {
-        mockMvc.perform(get("/api/orders/999")
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/orders/999")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }

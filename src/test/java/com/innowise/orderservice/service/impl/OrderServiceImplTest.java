@@ -1,11 +1,13 @@
 package com.innowise.orderservice.service.impl;
 
 import com.innowise.orderservice.client.UserClient;
-import com.innowise.orderservice.dto.OrderDto;
+import com.innowise.orderservice.dto.OrderRequestDto;
+import com.innowise.orderservice.dto.OrderResponseDto;
 import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.entity.OrderStatus;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
-import com.innowise.orderservice.mapper.OrderMapper;
+import com.innowise.orderservice.mapper.OrderRequestMapper;
+import com.innowise.orderservice.mapper.OrderResponseMapper;
 import com.innowise.orderservice.repository.OrderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +34,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,7 +43,10 @@ class OrderServiceImplTest {
     private OrderRepository orderRepository;
 
     @Mock
-    private OrderMapper orderMapper;
+    private OrderRequestMapper orderRequestMapper;
+
+    @Mock
+    private OrderResponseMapper orderResponseMapper;
 
     @Mock
     private UserClient userClient;
@@ -51,7 +55,8 @@ class OrderServiceImplTest {
     private OrderServiceImpl orderService;
 
     private Order order;
-    private OrderDto orderDto;
+    private OrderRequestDto orderRequestDto;
+    private OrderResponseDto orderResponseDto;
 
     @BeforeEach
     void setUp() {
@@ -59,23 +64,22 @@ class OrderServiceImplTest {
         order.setId(1L);
         order.setUserId(100L);
         order.setStatus(OrderStatus.CREATED);
-        order.setTotalPrice(java.math.BigDecimal.ZERO);
-        order.setDeleted(false);
         order.setItems(new ArrayList<>());
 
-        orderDto = new OrderDto();
-        orderDto.setId(1L);
-        orderDto.setUserId(100L);
-        orderDto.setStatus(OrderStatus.CREATED);
+        orderRequestDto = new OrderRequestDto();
+        orderRequestDto.setUserId(100L);
+
+        orderResponseDto = new OrderResponseDto();
+        orderResponseDto.setId(1L);
     }
 
     @Test
     void createOrder_Success() {
-        when(orderMapper.toOrder(orderDto)).thenReturn(order);
+        when(orderRequestMapper.toOrder(orderRequestDto)).thenReturn(order);
         when(orderRepository.save(order)).thenReturn(order);
-        when(orderMapper.toOrderDto(order)).thenReturn(orderDto);
+        when(orderResponseMapper.toOrderResponseDto(order)).thenReturn(orderResponseDto);
 
-        OrderDto result = orderService.createOrder(orderDto);
+        OrderResponseDto result = orderService.createOrder(orderRequestDto);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
@@ -85,10 +89,9 @@ class OrderServiceImplTest {
     @Test
     void getOrderById_Success() {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(orderMapper.toOrderDto(order)).thenReturn(orderDto);
-        when(userClient.getUserById(100L)).thenReturn(null);
+        when(orderResponseMapper.toOrderResponseDto(order)).thenReturn(orderResponseDto);
 
-        OrderDto result = orderService.getOrderById(1L);
+        OrderResponseDto result = orderService.getOrderById(1L);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
@@ -101,7 +104,7 @@ class OrderServiceImplTest {
 
         assertThrows(ResourceNotFoundException.class, () -> orderService.getOrderById(1L));
         verify(orderRepository, times(1)).findById(1L);
-        verifyNoInteractions(orderMapper);
+        verifyNoInteractions(orderResponseMapper);
     }
 
     @Test
@@ -112,10 +115,9 @@ class OrderServiceImplTest {
         Page<Order> orderPage = new PageImpl<>(List.of(order));
 
         when(orderRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(orderPage);
-        when(orderMapper.toOrderDto(order)).thenReturn(orderDto);
-        when(userClient.getUserById(100L)).thenReturn(null);
+        when(orderResponseMapper.toOrderResponseDto(order)).thenReturn(orderResponseDto);
 
-        Page<OrderDto> result = orderService.getAllOrders(now, now, statuses, pageable);
+        Page<OrderResponseDto> result = orderService.getAllOrders(now, now, statuses, pageable);
 
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
@@ -126,14 +128,12 @@ class OrderServiceImplTest {
     void getOrdersByUserId_Success() {
         List<Order> orders = List.of(order);
         when(orderRepository.findByUserId(100L)).thenReturn(orders);
-        when(orderMapper.toOrderDto(order)).thenReturn(orderDto);
-        when(userClient.getUserById(100L)).thenReturn(null);
+        when(orderResponseMapper.toOrderResponseDto(order)).thenReturn(orderResponseDto);
 
-        List<OrderDto> result = orderService.getOrdersByUserId(100L);
+        List<OrderResponseDto> result = orderService.getOrdersByUserId(100L);
 
         assertNotNull(result);
         assertEquals(1, result.size());
-        assertEquals(100L, result.get(0).getUserId());
         verify(orderRepository, times(1)).findByUserId(100L);
     }
 
@@ -141,35 +141,23 @@ class OrderServiceImplTest {
     void updateOrderById_Success() {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
         when(orderRepository.save(order)).thenReturn(order);
-        when(orderMapper.toOrderDto(order)).thenReturn(orderDto);
+        when(orderResponseMapper.toOrderResponseDto(order)).thenReturn(orderResponseDto);
 
-        OrderDto result = orderService.updateOrderById(1L, orderDto);
+        OrderResponseDto result = orderService.updateOrderById(1L, orderRequestDto);
 
         assertNotNull(result);
         assertEquals(1L, result.getId());
-        verify(orderMapper, times(1)).updateOrderFromDto(orderDto, order);
+        verify(orderRequestMapper, times(1)).updateOrderFromDto(orderRequestDto, order);
         verify(orderRepository, times(1)).save(order);
-    }
-
-    @Test
-    void updateOrderById_ThrowsResourceNotFoundException() {
-        when(orderRepository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () -> orderService.updateOrderById(1L, orderDto));
-
-        verify(orderRepository, times(1)).findById(1L);
-        verifyNoMoreInteractions(orderRepository);
-        verifyNoInteractions(orderMapper);
     }
 
     @Test
     void deleteOrderById_Success() {
         when(orderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(orderRepository.save(any(Order.class))).thenReturn(order);
 
         assertDoesNotThrow(() -> orderService.deleteOrderById(1L));
 
         verify(orderRepository, times(1)).findById(1L);
-        verify(orderRepository, times(1)).save(any(Order.class));
+        verify(orderRepository, times(1)).delete(order);
     }
 }

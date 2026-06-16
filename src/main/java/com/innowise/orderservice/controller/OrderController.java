@@ -1,8 +1,8 @@
 package com.innowise.orderservice.controller;
 
-import com.innowise.orderservice.dto.OrderDto;
+import com.innowise.orderservice.dto.OrderRequestDto;
+import com.innowise.orderservice.dto.OrderResponseDto;
 import com.innowise.orderservice.entity.OrderStatus;
-import com.innowise.orderservice.exception.ResourceNotFoundException;
 import com.innowise.orderservice.service.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -34,40 +34,40 @@ public class OrderController {
     }
 
     @PostMapping
-    public ResponseEntity<OrderDto> createOrder(@Valid @RequestBody OrderDto orderDto) {
-        OrderDto createdOrder = orderService.createOrder(orderDto);
+    public ResponseEntity<OrderResponseDto> createOrder(@Valid @RequestBody OrderRequestDto orderDto) {
+        OrderResponseDto createdOrder = orderService.createOrder(orderDto);
         return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<OrderDto> getOrderById(@PathVariable Long id) {
-        OrderDto orderDto = orderService.getOrderById(id);
+    public ResponseEntity<OrderResponseDto> getOrderById(@PathVariable Long id) {
+        OrderResponseDto orderDto = orderService.getOrderById(id);
         return ResponseEntity.ok(orderDto);
     }
 
     @GetMapping
-    public ResponseEntity<Page<OrderDto>> getAllOrders(
+    public ResponseEntity<Page<OrderResponseDto>> getAllOrders(
             @RequestParam(required = false) Instant start,
             @RequestParam(required = false) Instant end,
             @RequestParam(required = false) List<OrderStatus> statuses,
             @PageableDefault(size = 10) Pageable pageable) {
 
-        Page<OrderDto> orderDtoPage = orderService.getAllOrders(start, end, statuses, pageable);
+        Page<OrderResponseDto> orderDtoPage = orderService.getAllOrders(start, end, statuses, pageable);
         return ResponseEntity.ok(orderDtoPage);
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<OrderDto>> getOrdersByUserId(@PathVariable Long userId) {
-        List<OrderDto> orders = orderService.getOrdersByUserId(userId);
+    public ResponseEntity<List<OrderResponseDto>> getOrdersByUserId(@PathVariable Long userId) {
+        List<OrderResponseDto> orders = orderService.getOrdersByUserId(userId);
         return ResponseEntity.ok(orders);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<OrderDto> updateOrderById(
+    public ResponseEntity<OrderResponseDto> updateOrderById(
             @PathVariable Long id,
-            @Valid @RequestBody OrderDto updatedOrderDto) {
+            @Valid @RequestBody OrderRequestDto updatedOrderDto) {
 
-        OrderDto updatedOrder = orderService.updateOrderById(id, updatedOrderDto);
+        OrderResponseDto updatedOrder = orderService.updateOrderById(id, updatedOrderDto);
         return ResponseEntity.ok(updatedOrder);
     }
 
@@ -77,4 +77,3 @@ public class OrderController {
         return ResponseEntity.noContent().build();
     }
 }
-

@@ -3,7 +3,7 @@ package com.innowise.orderservice.service.impl;
 import com.innowise.orderservice.dto.ItemDto;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
-import com.innowise.orderservice.mapper.OrderMapper;
+import com.innowise.orderservice.mapper.ItemMapper;
 import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.service.ItemService;
 import org.springframework.stereotype.Service;
@@ -17,9 +17,9 @@ public class ItemServiceImpl implements ItemService {
     private static final String ITEM_NOT_FOUND_MESSAGE = "Item not found with id: ";
 
     private final ItemRepository itemRepository;
-    private final OrderMapper itemMapper;
+    private final ItemMapper itemMapper;
 
-    public ItemServiceImpl(ItemRepository itemRepository, OrderMapper itemMapper) {
+    public ItemServiceImpl(ItemRepository itemRepository, ItemMapper itemMapper) {
         this.itemRepository = itemRepository;
         this.itemMapper = itemMapper;
     }
@@ -64,6 +64,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     @Transactional
     public void deleteItemById(Long id) {
+
+        if (!itemRepository.existsById(id)) {
+            throw new ResourceNotFoundException(ITEM_NOT_FOUND_MESSAGE + id);
+        }
 
         itemRepository.deleteById(id);
     }

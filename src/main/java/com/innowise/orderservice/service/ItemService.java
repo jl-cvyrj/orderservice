@@ -1,7 +1,6 @@
 package com.innowise.orderservice.service;
 
 import com.innowise.orderservice.dto.ItemDto;
-import com.innowise.orderservice.exception.ResourceNotFoundException;
 
 import java.util.List;
 

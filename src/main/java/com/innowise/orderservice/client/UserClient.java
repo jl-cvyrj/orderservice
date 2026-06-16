@@ -15,7 +15,7 @@ public class UserClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${USER_SERVICE_URL}")
+    @Value("${user.service.url}")
     private String userServiceUrl;
 
     public UserClient(RestTemplate restTemplate) {
@@ -31,7 +31,7 @@ public class UserClient {
         return restTemplate.getForObject(url, UserDto.class);
     }
 
-    public UserDto getUserByIdFallback(Long userId, Throwable throwable) {
+    private UserDto getUserByIdFallback(Long userId, Throwable throwable) {
 
         log.error("Circuit Breaker triggered! User Service is unavailable. Reason: {}", throwable.getMessage());
 

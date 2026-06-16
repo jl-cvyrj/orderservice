@@ -1,8 +1,8 @@
 package com.innowise.orderservice.service;
 
-import com.innowise.orderservice.dto.OrderDto;
+import com.innowise.orderservice.dto.OrderRequestDto;
+import com.innowise.orderservice.dto.OrderResponseDto;
 import com.innowise.orderservice.entity.OrderStatus;
-import com.innowise.orderservice.exception.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -11,15 +11,15 @@ import java.util.List;
 
 public interface OrderService {
 
-    OrderDto createOrder(OrderDto orderDto);
+    OrderResponseDto createOrder(OrderRequestDto orderDto);
 
-    OrderDto getOrderById(Long id);
+    OrderResponseDto getOrderById(Long id);
 
-    Page<OrderDto> getAllOrders(Instant start, Instant end, List<OrderStatus> statuses, Pageable pageable);
+    Page<OrderResponseDto> getAllOrders(Instant start, Instant end, List<OrderStatus> statuses, Pageable pageable);
 
-    List<OrderDto> getOrdersByUserId(Long userId);
+    List<OrderResponseDto> getOrdersByUserId(Long userId);
 
-    OrderDto updateOrderById(Long id, OrderDto updatedOrderDto);
+    OrderResponseDto updateOrderById(Long id, OrderRequestDto updatedOrderDto);
 
     void deleteOrderById(Long id);
 }

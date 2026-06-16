@@ -2,6 +2,7 @@ package com.innowise.orderservice.dto;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -18,7 +19,7 @@ public class ItemDto {
 
     private Long id;
 
-    @NotNull(message = "Name is required")
+    @NotBlank(message = "Name is required")
     private String name;
 
     @NotNull(message = "Price is required")

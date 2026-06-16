@@ -3,7 +3,7 @@ package com.innowise.orderservice.service.impl;
 import com.innowise.orderservice.dto.ItemDto;
 import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
-import com.innowise.orderservice.mapper.OrderMapper;
+import com.innowise.orderservice.mapper.ItemMapper;
 import com.innowise.orderservice.repository.ItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +32,7 @@ class ItemServiceImplTest {
     private ItemRepository itemRepository;
 
     @Mock
-    private OrderMapper itemMapper;
+    private ItemMapper itemMapper;
 
     @InjectMocks
     private ItemServiceImpl itemService;
@@ -118,10 +118,13 @@ class ItemServiceImplTest {
 
         verify(itemRepository, times(1)).findById(1L);
         verifyNoMoreInteractions(itemRepository);
+        verifyNoInteractions(itemMapper);
     }
 
     @Test
     void deleteItemById_Success() {
+        when(itemRepository.existsById(1L)).thenReturn(true);
+
         assertDoesNotThrow(() -> itemService.deleteItemById(1L));
         verify(itemRepository, times(1)).deleteById(1L);
     }

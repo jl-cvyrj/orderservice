@@ -1,8 +1,6 @@
 package com.innowise.orderservice.entity;
 
-import org.springframework.security.core.GrantedAuthority;
-
-public enum OrderStatus implements GrantedAuthority {
+public enum OrderStatus {
 
     CREATED,
     PAID,
@@ -11,8 +9,7 @@ public enum OrderStatus implements GrantedAuthority {
     CANCELLED,
     REFUNDED;
 
-    @Override
-    public String getAuthority() {
+    public String getStatusLabel() {
         return "STATUS_" + this.name();
     }
 }

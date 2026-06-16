@@ -1,16 +1,22 @@
 package com.innowise.orderservice.service.impl;
 
 import com.innowise.orderservice.client.UserClient;
-import com.innowise.orderservice.dto.OrderDto;
+import com.innowise.orderservice.dto.OrderRequestDto;
+import com.innowise.orderservice.dto.OrderResponseDto;
 import com.innowise.orderservice.dto.UserDto;
+import com.innowise.orderservice.entity.Item;
 import com.innowise.orderservice.entity.Order;
 import com.innowise.orderservice.entity.OrderItem;
 import com.innowise.orderservice.entity.OrderStatus;
 import com.innowise.orderservice.exception.ResourceNotFoundException;
-import com.innowise.orderservice.mapper.OrderMapper;
+import com.innowise.orderservice.mapper.OrderRequestMapper;
+import com.innowise.orderservice.mapper.OrderResponseMapper;
+import com.innowise.orderservice.repository.ItemRepository;
 import com.innowise.orderservice.repository.OrderRepository;
 import com.innowise.orderservice.service.OrderService;
 import com.innowise.orderservice.specification.OrderSpecification;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,57 +30,53 @@ import java.util.List;
 @Service
 public class OrderServiceImpl implements OrderService {
 
+    private static final Logger log = LogManager.getLogger(OrderServiceImpl.class);
     private static final String ORDER_NOT_FOUND_MESSAGE = "Order not found with id: ";
+    private static final String USER_NOT_FOUND_MESSAGE = "Failed to fetch user";
 
     private final OrderRepository orderRepository;
-    private final OrderMapper orderMapper;
+    private final ItemRepository itemRepository;
+    private final OrderRequestMapper orderRequestMapper;
+    private final OrderResponseMapper orderResponseMapper;
     private final UserClient userClient;
 
-    public OrderServiceImpl(OrderRepository orderRepository, OrderMapper orderMapper, UserClient userClient) {
+    public OrderServiceImpl(OrderRepository orderRepository, ItemRepository itemRepository, OrderRequestMapper orderMapper, OrderResponseMapper orderResponseMapper, UserClient userClient) {
         this.orderRepository = orderRepository;
-        this.orderMapper = orderMapper;
+        this.itemRepository = itemRepository;
+        this.orderRequestMapper = orderMapper;
+        this.orderResponseMapper = orderResponseMapper;
         this.userClient = userClient;
     }
 
     @Override
     @Transactional
-    public OrderDto createOrder(OrderDto orderDto) {
-
-        Order order = orderMapper.toOrder(orderDto);
+    public OrderResponseDto createOrder(OrderRequestDto orderDto) {
+        Order order = orderRequestMapper.toOrder(orderDto);
         order.setStatus(OrderStatus.CREATED);
-
         linkOrderItems(order);
 
         Order savedOrder = orderRepository.save(order);
-        OrderDto responseDto = orderMapper.toOrderDto(savedOrder);
+        OrderResponseDto responseDto = orderResponseMapper.toOrderResponseDto(savedOrder);
 
-        if (savedOrder.getUserId() != null) {
-            UserDto userDto = userClient.getUserById(savedOrder.getUserId());
-            responseDto.setUser(userDto);
-        }
-
+        enrichOrderWithUser(responseDto, savedOrder.getUserId());
         return responseDto;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public OrderDto getOrderById(Long id) {
-
+    public OrderResponseDto getOrderById(Long id) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE + id));
-        OrderDto orderDto = orderMapper.toOrderDto(order);
 
-        if (order.getUserId() != null) {
-            UserDto userDto = userClient.getUserById(order.getUserId());
-            orderDto.setUser(userDto);
-        }
+        OrderResponseDto orderDto = orderResponseMapper.toOrderResponseDto(order);
+        enrichOrderWithUser(orderDto, order.getUserId());
 
         return orderDto;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<OrderDto> getAllOrders(Instant start, Instant end, List<OrderStatus> statuses, Pageable pageable) {
+    public Page<OrderResponseDto> getAllOrders(Instant start, Instant end, List<OrderStatus> statuses, Pageable pageable) {
 
         Specification<Order> specification = Specification
                 .where(OrderSpecification.createdBetween(start, end))
@@ -82,27 +84,21 @@ public class OrderServiceImpl implements OrderService {
 
         Page<Order> orderPage = orderRepository.findAll(specification, pageable);
         return orderPage.map(order -> {
-            OrderDto orderDto = orderMapper.toOrderDto(order);
-            if(order.getUserId() != null) {
-                UserDto userDto = userClient.getUserById(order.getUserId());
-                orderDto.setUser(userDto);
-            }
+            OrderResponseDto orderDto = orderResponseMapper.toOrderResponseDto(order);
+            enrichOrderWithUser(orderDto, order.getUserId());
             return orderDto;
         });
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<OrderDto> getOrdersByUserId(Long userId) {
+    public List<OrderResponseDto> getOrdersByUserId(Long userId) {
 
         List<Order> orders = orderRepository.findByUserId(userId);
         return orders.stream()
                 .map(order -> {
-                    OrderDto orderDto = orderMapper.toOrderDto(order);
-                    if(order.getUserId() != null) {
-                        UserDto userDto = userClient.getUserById(order.getUserId());
-                        orderDto.setUser(userDto);
-                    }
+                    OrderResponseDto orderDto = orderResponseMapper.toOrderResponseDto(order);
+                    enrichOrderWithUser(orderDto, order.getUserId());
                     return orderDto;
                 })
                 .toList();
@@ -110,21 +106,18 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     @Transactional
-    public OrderDto updateOrderById(Long id, OrderDto updatedOrderDto) {
+    public OrderResponseDto updateOrderById(Long id, OrderRequestDto updatedOrderDto) {
 
         Order existingOrder = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE + id));
-        orderMapper.updateOrderFromDto(updatedOrderDto, existingOrder);
+        orderRequestMapper.updateOrderFromDto(updatedOrderDto, existingOrder);
 
         linkOrderItems(existingOrder);
 
         Order savedOrder = orderRepository.save(existingOrder);
-        OrderDto responseOrderDto = orderMapper.toOrderDto(savedOrder);
+        OrderResponseDto responseOrderDto = orderResponseMapper.toOrderResponseDto(savedOrder);
+        enrichOrderWithUser(responseOrderDto, savedOrder.getUserId());
 
-        if(savedOrder.getUserId() != null) {
-            UserDto userDto = userClient.getUserById(savedOrder.getUserId());
-            responseOrderDto.setUser(userDto);
-        }
         return responseOrderDto;
     }
 
@@ -135,17 +128,32 @@ public class OrderServiceImpl implements OrderService {
         Order existingOrder = orderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ORDER_NOT_FOUND_MESSAGE + id));
 
-        existingOrder.setDeleted(true);
-        orderRepository.save(existingOrder);
+        orderRepository.delete(existingOrder);
     }
 
-    public void linkOrderItems(Order order) {
+    private void linkOrderItems(Order order) {
         List<OrderItem> itemsMapper = order.getItems();
         order.setItems(new ArrayList<>());
 
         if(itemsMapper != null) {
-            for (OrderItem item : itemsMapper) {
-                order.addItem(item);
+            for (OrderItem orderItem : itemsMapper) {
+                if (orderItem.getItem() == null && orderItem.getItemId() != null) {
+                    Item item = itemRepository.findById(orderItem.getItemId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Item not found"));
+                    orderItem.setItem(item);
+                }
+                order.addItem(orderItem);
+            }
+        }
+    }
+
+    private void enrichOrderWithUser(OrderResponseDto orderDto, Long userId) {
+        if (userId != null) {
+            try {
+                UserDto userDto = userClient.getUserById(userId);
+                orderDto.setUser(userDto);
+            } catch (Exception e) {
+                log.error(USER_NOT_FOUND_MESSAGE, e);
             }
         }
     }

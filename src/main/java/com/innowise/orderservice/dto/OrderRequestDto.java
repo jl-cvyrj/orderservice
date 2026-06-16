@@ -1,6 +1,5 @@
 package com.innowise.orderservice.dto;
 
-import com.innowise.orderservice.entity.OrderStatus;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotEmpty;
@@ -17,14 +16,10 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class OrderDto {
-
-    private Long id;
+public class OrderRequestDto {
 
     @NotNull(message = "User ID is required")
     private Long userId;
-
-    private OrderStatus status;
 
     @DecimalMin(value = "0.01", message = "Price must be greater then or equal 0.01")
     @Digits(integer = 8, fraction = 2, message = "Price format must be up to 8 digits and 2 decimals")
@@ -32,6 +27,4 @@ public class OrderDto {
 
     @NotEmpty(message = "Order must contain at least one item")
     private List<OrderItemDto> items;
-
-    private UserDto user;
 }

@@ -9,6 +9,8 @@ import java.util.List;
 
 public class OrderSpecification {
 
+    private OrderSpecification() {}
+
     public static Specification<Order> createdBetween (Instant start, Instant end) {
         return (root, query, criteriaBuilder) -> {
             if (start == null && end == null) {

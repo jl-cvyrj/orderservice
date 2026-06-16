@@ -1,7 +1,6 @@
 package com.innowise.orderservice.controller;
 
 import com.innowise.orderservice.dto.ItemDto;
-import com.innowise.orderservice.exception.ResourceNotFoundException;
 import com.innowise.orderservice.service.ItemService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
