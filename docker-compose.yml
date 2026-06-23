@@ -1,0 +1,38 @@
+services:
+  postgres-order:
+    image: postgres:15-alpine
+    container_name: orderservice-postgres
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_order_data:/var/lib/postgresql/data
+    networks:
+      - orderservice-network
+
+  app-order:
+    build: .
+    container_name: orderservice-app
+    depends_on:
+      - postgres-order
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/order_db
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      USER_SERVICE_URL: ${USER_SERVICE_URL}
+    ports:
+      - "8084:8084"
+    networks:
+      - orderservice-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_order_data:
+
+networks:
+  orderservice-network:
+    driver: bridge
