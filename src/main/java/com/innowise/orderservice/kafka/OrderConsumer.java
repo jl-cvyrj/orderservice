@@ -5,9 +5,13 @@ import com.innowise.orderservice.entity.OrderStatus;
 import com.innowise.orderservice.repository.OrderRepository;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class OrderConsumer {
+
+    private static final Logger log = LoggerFactory.getLogger(OrderConsumer.class);
 
     private final OrderRepository orderRepository;
 
@@ -26,9 +30,9 @@ public class OrderConsumer {
                 orderRepository.save(order);
             });
         } catch (NumberFormatException e) {
-            System.err.println("Invalid order ID received: " + event.orderId());
+            log.error("Invalid order ID received: {} ", event.orderId());
         } catch (Exception e) {
-            System.err.println("Error processing payment event: " + e.getMessage());
+            log.error("Error processing payment event: {} ", e.getMessage());
         }
     }
 
