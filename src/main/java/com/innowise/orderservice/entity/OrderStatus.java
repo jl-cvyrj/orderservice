@@ -7,7 +7,8 @@ public enum OrderStatus {
     CONFIRMED,
     COMPLETED,
     CANCELLED,
-    REFUNDED;
+    REFUNDED,
+    PAYMENT_FAILED;
 
     public String getStatusLabel() {
         return "STATUS_" + this.name();
